@@ -3,19 +3,23 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 import json
+import os
 import ssl
 import urllib.parse
 
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 import requests
 
 
-config = dotenv_values("env")
+load_dotenv(stream=open(".environ"))
 
-INT_FQDN = config["INT_FQDN"]
-CIT_ACCOUNT_ID = config["CIT_ACCOUNT_ID"]
-SEARCH_STRING = "{INT_FQDN}/{{acms_id}}".format(INT_FQDN=INT_FQDN)
-CIT_API_URL = f"https://api.catalogit.app/api/public/accounts/{CIT_ACCOUNT_ID}/search?query={{SEARCH_STRING}}"
+CIT_ACCOUNT_ID = os.environ["CIT_ACCOUNT_ID"]
+INT_FQDN = os.environ["INT_FQDN"]
+BIND_HOST = os.environ["INT_BIND_HOST"]
+BIND_PORT = int(os.environ["INT_BIND_PORT"])
+CIT_SEARCH_URL = f"https://api.catalogit.app/api/public/accounts/{CIT_ACCOUNT_ID}/search?query={{SEARCH_STRING}}"
+SEARCH_STRING = f"{INT_FQDN}/{{custom_id}}"
+
 
 # Add ThreadingMixin to make the HTTPServer multithreaded
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
@@ -28,8 +32,8 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
     # GET
     def do_GET(self):
 
-        acms_id = self.path[1:] if len(self.path) > 1 else None
-        entry = get_cit_entry(acms_id)
+        custom_id = self.path[1:] if len(self.path) > 1 else None
+        entry = get_cit_entry(custom_id)
         
         if entry:
             # send redirect
@@ -47,9 +51,9 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(bytes(message, "utf8"))
 
 
-def get_cit_entry(acms_id):
-    search_string = urllib.parse.quote(SEARCH_STRING.format(acms_id=acms_id), safe="")
-    url = CIT_API_URL.format(SEARCH_STRING=search_string)
+def get_cit_entry(custom_id):
+    search_string = urllib.parse.quote(SEARCH_STRING.format(custom_id=custom_id), safe="")
+    url = CIT_SEARCH_URL.format(SEARCH_STRING=search_string)
     response = requests.get(url).json()
     if response["total"] != 1:
         return None
@@ -58,8 +62,8 @@ def get_cit_entry(acms_id):
 
 
 def run():
-    print('Starting ACMS CatalogIt-Discourse Integration Server...')
-    server_address = (config["INT_HOST"], int(config["INT_PORT"]))
+    print('Starting CatalogIt-Discourse Integration Server...')
+    server_address = (BIND_HOST, BIND_PORT)
     httpd = ThreadingHTTPServer(server_address, HTTPServer_RequestHandler)
     httpd.socket = ssl.wrap_socket(
         httpd.socket,
