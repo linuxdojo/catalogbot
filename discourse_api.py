@@ -24,7 +24,6 @@ class DiscourseAPI():
         # do request
         url = f"{self.base_url}/{path}"
         response = method_func(url, **kwargs)
-        print(response.text)
         return response.json()
 
     def get_categories(self):
@@ -44,4 +43,14 @@ class DiscourseAPI():
             "color": color
         }
         response = self.api_request("/categories", requests.post, body=body)
+        return response
+
+    def create_user(self, name, email, username, password):
+        body = {
+            "name": name,
+            "email": email,
+            "password": password,
+            "username": username
+        }
+        response = self.api_request("/users", requests.post, body=body)
         return response

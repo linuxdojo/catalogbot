@@ -6,18 +6,18 @@ import json
 import os
 import ssl
 import sys
-import urllib.parse
 
 from dotenv import load_dotenv
 import requests
 
+import catalogit_api
 import discourse_api
 
 
 load_dotenv(stream=open(".environ"))
 
 CIT_ACCOUNT_ID = os.environ["CIT_ACCOUNT_ID"]
-INT_FQDN = os.environ["INT_FQDN"]
+INT_BASE_URL = os.environ["INT_BASE_URL"]
 BIND_HOST = os.environ["INT_BIND_HOST"]
 BIND_PORT = int(os.environ["INT_BIND_PORT"])
 DISCOURSE_API_URL = os.environ["DISCOURSE_API_URL"]
@@ -25,7 +25,7 @@ DISCOURSE_API_USERNAME = os.environ["DISCOURSE_API_USERNAME"]
 DISCOURSE_API_KEY = os.environ["DISCOURSE_API_KEY"]
 DISCOURSE_CATEGORY = os.environ["DISCOURSE_CATEGORY"]
 CIT_SEARCH_URL = f"https://api.catalogit.app/api/public/accounts/{CIT_ACCOUNT_ID}/search?query={{SEARCH_STRING}}"
-SEARCH_STRING = f"{INT_FQDN}/{{custom_id}}"
+SEARCH_STRING = f"{INT_BASE_URL}/{{custom_id}}"
 
 
 # Add ThreadingMixin to make the HTTPServer multithreaded
@@ -35,12 +35,16 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
 # HTTPRequestHandler class
 class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
+
+    def __init__(self, *args, **kwargs):
+        self.cit_api = catalogit_api.CatalogItAPI(CIT_ACCOUNT_ID, INT_BASE_URL)
+        super().__init__(*args, **kwargs)
  
     # GET
     def do_GET(self):
 
         custom_id = self.path[1:] if len(self.path) > 1 else None
-        entry = get_cit_entry(custom_id)
+        entry = self.cit_api.get_entry(custom_id)
         
         if entry:
             # send redirect
@@ -58,20 +62,10 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(bytes(message, "utf8"))
 
 
-def get_cit_entry(custom_id):
-    search_string = urllib.parse.quote(SEARCH_STRING.format(custom_id=custom_id), safe="")
-    url = CIT_SEARCH_URL.format(SEARCH_STRING=search_string)
-    response = requests.get(url).json()
-    if response["total"] != 1:
-        return None
-    else:
-        return response
-
-
 def run():
     server_address = (BIND_HOST, BIND_PORT)
     httpd = ThreadingHTTPServer(server_address, HTTPServer_RequestHandler)
-    if INT_FQDN.startswith("https://"):
+    if INT_BASE_URL.startswith("https://"):
         httpd.socket = ssl.wrap_socket(
             httpd.socket,
             server_side=True,
@@ -83,6 +77,7 @@ def run():
  
 
 def create_category(dapi, category_name):
+    """idempotent create category function"""
     response = None
     if not dapi.get_category_by_name(category_name):
         response = dapi.create_category(category_name)
@@ -91,6 +86,11 @@ def create_category(dapi, category_name):
 
 if __name__ == "__main__": 
     dapi = discourse_api.DiscourseAPI(base_url=DISCOURSE_API_URL, username=DISCOURSE_API_USERNAME, key=DISCOURSE_API_KEY)
-    response = create_category(dapi, DISCOURSE_CATEGORY)
+    # create collection discussion category if it doesn't already exist
+    if create_category(dapi, DISCOURSE_CATEGORY):
+        print(f"Created collection discussion category: {DISCOURSE_CATEGORY}")
+    else:
+        print(f"Collection discussion category '{DISCOURSE_CATEGORY}' exists.")
+    # start the link mapping server
     run()
 
