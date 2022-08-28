@@ -1,3 +1,5 @@
+# Copy this file to `.environ` and replace values below
+
 # CatalogIt Config
 CIT_ACCOUNT_ID=YOUR_ACCOUNT_ID
 
@@ -9,6 +11,6 @@ DISCOURSE_API_KEY="YOUR_DISCOURSE_API_KEY"
 DISCOURSE_CATEGORY="Our CatalogIt Collection"
 
 ### Integration Config
-INT_FQDN="YOUR_INTEGRATION_URL"
+INT_BASE_URL="YOUR_INTEGRATION_URL"
 INT_BIND_HOST="0.0.0.0"
 INT_BIND_PORT=8080
