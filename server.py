@@ -11,7 +11,7 @@ import urllib.parse
 from dotenv import load_dotenv
 import requests
 
-import discourse_api as dapi
+import discourse_api
 
 
 load_dotenv(stream=open(".environ"))
@@ -23,6 +23,7 @@ BIND_PORT = int(os.environ["INT_BIND_PORT"])
 DISCOURSE_API_URL = os.environ["DISCOURSE_API_URL"]
 DISCOURSE_API_USERNAME = os.environ["DISCOURSE_API_USERNAME"]
 DISCOURSE_API_KEY = os.environ["DISCOURSE_API_KEY"]
+DISCOURSE_CATEGORY = os.environ["DISCOURSE_CATEGORY"]
 CIT_SEARCH_URL = f"https://api.catalogit.app/api/public/accounts/{CIT_ACCOUNT_ID}/search?query={{SEARCH_STRING}}"
 SEARCH_STRING = f"{INT_FQDN}/{{custom_id}}"
 
@@ -81,9 +82,15 @@ def run():
     httpd.serve_forever()
  
 
+def create_category(dapi, category_name):
+    response = None
+    if not dapi.get_category_by_name(category_name):
+        response = dapi.create_category(category_name)
+    return response
+
+
 if __name__ == "__main__": 
-    #response = dapi.api_request(DISCOURSE_API_URL, "/categories", DISCOURSE_API_USERNAME, DISCOURSE_API_KEY, requests.get)
-    #print(json.dumps(response))
-    #sys.exit()
+    dapi = discourse_api.DiscourseAPI(base_url=DISCOURSE_API_URL, username=DISCOURSE_API_USERNAME, key=DISCOURSE_API_KEY)
+    response = create_category(dapi, DISCOURSE_CATEGORY)
     run()
 
