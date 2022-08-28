@@ -46,7 +46,7 @@ TOPIC_TEMPLATE="""
 	<img src="{image_url}" alt="{title}">
 </a>
 Click the image to view this entry in our collection.
-<h6>Created by <a href="https://github.com/linuxdojo/catalogit-discourse-integration/">ACMS CatalogBot</a></h6>
+<h6>Created by <a href="https://github.com/linuxdojo/catalogbot">CatalogBot</a></h6>
 """
 
 # ThreadingMixin to make the HTTPServer multithreaded
