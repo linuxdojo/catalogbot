@@ -2,10 +2,11 @@
 CIT_ACCOUNT_ID=YOUR_ACCOUNT_ID
 
 # Discourse Config
-# Note: API user requires perms on any parameter: topics.write+update+read, categories.list+show, uploads.create
+# Note: API user requires full global permissions
 DISCOURSE_API_URL="https://YOUR_DISCOURSE_SITE_DOMAIN_NAME"
 DISCOURSE_API_USERNAME="YOUR_DISCOURSE_API_USER"
 DISCOURSE_API_KEY="YOUR_DISCOURSE_API_KEY"
+DISCOURSE_CATEGORY="Our CatalogIt Collection"
 
 ### Integration Config
 INT_FQDN="YOUR_INTEGRATION_URL"
