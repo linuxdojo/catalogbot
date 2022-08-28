@@ -4,6 +4,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 import json
 import os
+import re
 import ssl
 import sys
 
@@ -12,23 +13,43 @@ import requests
 
 import catalogit_api
 import discourse_api
+from log import get_logger
 
 
-load_dotenv(stream=open(".environ"))
+# setup logging
+logger = get_logger()
 
-CIT_ACCOUNT_ID = os.environ["CIT_ACCOUNT_ID"]
-INT_BASE_URL = os.environ["INT_BASE_URL"]
+try:
+    load_dotenv(stream=open(".environ"))
+except FileNotFoundError:
+    logger.warning("Environment file '.environ' not found, using default environment variables.")
+
+
+# read env vars
 BIND_HOST = os.environ["INT_BIND_HOST"]
 BIND_PORT = int(os.environ["INT_BIND_PORT"])
+CIT_ACCOUNT_ID = os.environ["CIT_ACCOUNT_ID"]
+CIT_SEARCH_URL = f"https://api.catalogit.app/api/public/accounts/{CIT_ACCOUNT_ID}/search?query={{SEARCH_STRING}}"
+DISCOURSE_API_KEY = os.environ["DISCOURSE_API_KEY"]
 DISCOURSE_API_URL = os.environ["DISCOURSE_API_URL"]
 DISCOURSE_API_USERNAME = os.environ["DISCOURSE_API_USERNAME"]
-DISCOURSE_API_KEY = os.environ["DISCOURSE_API_KEY"]
 DISCOURSE_CATEGORY = os.environ["DISCOURSE_CATEGORY"]
-CIT_SEARCH_URL = f"https://api.catalogit.app/api/public/accounts/{CIT_ACCOUNT_ID}/search?query={{SEARCH_STRING}}"
+INT_BASE_URL = os.environ["INT_BASE_URL"]
 SEARCH_STRING = f"{INT_BASE_URL}/{{custom_id}}"
+UUID_PATTERN = re.compile('^[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}$')
+# remove trailing slashes
+DISCOURSE_API_URL = DISCOURSE_API_URL if not DISCOURSE_API_URL.endswith("/") else DISCOURSE_API_URL[:-1]
+INT_BASE_URL = INT_BASE_URL if not INT_BASE_URL.endswith("/") else INT_BASE_URL[:-1]
+TOPIC_TEMPLATE="""
+<h2>Discussion topic: {title}</h2>
+<a target="_blank" href="{cit_entry_url}">
+	<img src="{image_url}" alt="{title}">
+</a>
+Click the image to view this entry in our collection.
+<h6>Created by <a href="https://github.com/linuxdojo/catalogit-discourse-integration/">ACMS CatalogBot</a></h6>
+"""
 
-
-# Add ThreadingMixin to make the HTTPServer multithreaded
+# ThreadingMixin to make the HTTPServer multithreaded
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     pass
 
@@ -38,28 +59,54 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         self.cit_api = catalogit_api.CatalogItAPI(CIT_ACCOUNT_ID, INT_BASE_URL)
+        self.d_api = discourse_api.DiscourseAPI(
+            base_url=DISCOURSE_API_URL,
+            username=DISCOURSE_API_USERNAME,
+            key=DISCOURSE_API_KEY
+        )
         super().__init__(*args, **kwargs)
  
-    # GET
-    def do_GET(self):
+    def send_error_response(self, message="bad request", status=400):
+        self.send_response(status)
+        self.send_header('Content-type','application/json')
+        self.end_headers()
+        data = {"message": message}
+        message = json.dumps(data)
+        self.wfile.write(bytes(message, "utf8"))
 
+    def do_GET(self):
+        # extract custom_id
         custom_id = self.path[1:] if len(self.path) > 1 else None
-        entry = self.cit_api.get_entry(custom_id)
-        
-        if entry:
-            # send redirect
-            self.send_response(301)
-            self.send_header('Location', url)
-            self.end_headers()
+        if not UUID_PATTERN.match(custom_id):
+            logger.info(f"Got malformed custom_id: {custom_id}")
+            return self.send_error_response(message="malformed id")
+        # get topic if exists
+        topic = self.d_api.get_topic(custom_id)
+        if topic:
+            topic_id = topic["id"]
         else:
-            # Send response status code
-            self.send_response(400)
-            self.send_header('Content-type','text/html')
-            self.end_headers()
-            data = {"message": "bad_request"}
-            message = json.dumps(data)
-            # Write content as utf-8 data
-            self.wfile.write(bytes(message, "utf8"))
+            # generate new topic attributes 
+            logger.info(f"topic not found for custom_id '{custom_id}', creating new topic...")
+            cit_entry = self.cit_api.get_entry(custom_id)
+            category_id = self.d_api.get_category_by_name(DISCOURSE_CATEGORY)["id"]
+            image_url = cit_entry.get("media", [{}])[0].get("derivatives", {}).get("public", {}).get("path", "")
+            title = f"{cit_entry['properties']['hasName']['value_text']}"
+            embed_url = f"https://hub.catalogit.app/{CIT_ACCOUNT_ID}/folder/entry/{cit_entry['id']}"
+            external_id = custom_id
+            raw = TOPIC_TEMPLATE.format(
+                title=title,
+                cit_entry_url=embed_url,
+                image_url=image_url
+            )
+            # create new topic
+            logger.info(f"title: {title}, category_id: '{category_id}', image_url: '{image_url}', embed_url: {embed_url}, external_id: {external_id}, raw: {raw}")
+            result = self.d_api.create_topic(title, raw, category_id, embed_url, external_id)
+            topic_id = result["topic_id"]
+        # redirect to topic
+        topic_url = f"{DISCOURSE_API_URL}/t/{topic_id}"
+        self.send_response(301)
+        self.send_header('Location', topic_url)
+        self.end_headers()
 
 
 def run():
@@ -72,7 +119,7 @@ def run():
             certfile='localhost.pem',
             ssl_version=ssl.PROTOCOL_TLSv1_2
         )
-    print('Started CatalogIt-Discourse Integration Server, waiting for connections...')
+    logger.info('Started CatalogIt-Discourse Integration Server, waiting for connections...')
     httpd.serve_forever()
  
 
@@ -88,9 +135,9 @@ if __name__ == "__main__":
     dapi = discourse_api.DiscourseAPI(base_url=DISCOURSE_API_URL, username=DISCOURSE_API_USERNAME, key=DISCOURSE_API_KEY)
     # create collection discussion category if it doesn't already exist
     if create_category(dapi, DISCOURSE_CATEGORY):
-        print(f"Created collection discussion category: {DISCOURSE_CATEGORY}")
+        logger.info(f"Created Discourse Category: {DISCOURSE_CATEGORY}")
     else:
-        print(f"Collection discussion category '{DISCOURSE_CATEGORY}' exists.")
+        logger.info(f"Discourse Category '{DISCOURSE_CATEGORY}' exists.")
     # start the link mapping server
     run()
 

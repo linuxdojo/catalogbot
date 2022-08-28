@@ -1,5 +1,11 @@
 import requests
 
+from log import get_logger
+
+
+# setup logging
+logger = get_logger()
+
 
 class DiscourseAPI():
 
@@ -22,7 +28,7 @@ class DiscourseAPI():
             headers["Content-Type"] = "multipart/form-data"
             kwargs["data"] = body
         # do request
-        url = f"{self.base_url}/{path}"
+        url = f"{self.base_url}{path}"
         response = method_func(url, **kwargs)
         return response.json()
 
@@ -54,3 +60,22 @@ class DiscourseAPI():
         }
         response = self.api_request("/users", requests.post, body=body)
         return response
+
+    def get_topic(self, custom_id):
+        url = f"/t/external_id/{custom_id}"
+        response = self.api_request(url, requests.get)
+        if response.get("error_type") == "not_found":
+            return None
+        return response
+
+    def create_topic(self, title, raw, category_id, embed_url, external_id):
+        body = {
+            "title": title,
+            "raw": raw,
+            "category": category_id,
+            "embed_url": embed_url,
+            "external_id": external_id
+        }
+        response = self.api_request("/posts", requests.post, body=body)
+        return response
+

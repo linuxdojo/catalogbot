@@ -1,6 +1,13 @@
 import requests
 import urllib.parse
 
+from log import get_logger
+
+
+# setup logging
+logger = get_logger()
+
+
 class CatalogItAPI():
 
     def __init__(self, account_id, int_base_url):
@@ -19,4 +26,4 @@ class CatalogItAPI():
         if response["total"] != 1:
             return None
         else:
-            return response
+            return response["entries"][0]
