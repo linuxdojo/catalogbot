@@ -5,10 +5,13 @@ from socketserver import ThreadingMixIn
 import json
 import os
 import ssl
+import sys
 import urllib.parse
 
 from dotenv import load_dotenv
 import requests
+
+import discourse_api as dapi
 
 
 load_dotenv(stream=open(".environ"))
@@ -17,6 +20,9 @@ CIT_ACCOUNT_ID = os.environ["CIT_ACCOUNT_ID"]
 INT_FQDN = os.environ["INT_FQDN"]
 BIND_HOST = os.environ["INT_BIND_HOST"]
 BIND_PORT = int(os.environ["INT_BIND_PORT"])
+DISCOURSE_API_URL = os.environ["DISCOURSE_API_URL"]
+DISCOURSE_API_USERNAME = os.environ["DISCOURSE_API_USERNAME"]
+DISCOURSE_API_KEY = os.environ["DISCOURSE_API_KEY"]
 CIT_SEARCH_URL = f"https://api.catalogit.app/api/public/accounts/{CIT_ACCOUNT_ID}/search?query={{SEARCH_STRING}}"
 SEARCH_STRING = f"{INT_FQDN}/{{custom_id}}"
 
@@ -62,18 +68,22 @@ def get_cit_entry(custom_id):
 
 
 def run():
-    print('Starting CatalogIt-Discourse Integration Server...')
     server_address = (BIND_HOST, BIND_PORT)
     httpd = ThreadingHTTPServer(server_address, HTTPServer_RequestHandler)
-    httpd.socket = ssl.wrap_socket(
-        httpd.socket,
-        server_side=True,
-        certfile='localhost.pem',
-        ssl_version=ssl.PROTOCOL_TLSv1_2
-    )
+    if INT_FQDN.startswith("https://"):
+        httpd.socket = ssl.wrap_socket(
+            httpd.socket,
+            server_side=True,
+            certfile='localhost.pem',
+            ssl_version=ssl.PROTOCOL_TLSv1_2
+        )
+    print('Started CatalogIt-Discourse Integration Server, waiting for connections...')
     httpd.serve_forever()
  
 
 if __name__ == "__main__": 
+    #response = dapi.api_request(DISCOURSE_API_URL, "/categories", DISCOURSE_API_USERNAME, DISCOURSE_API_KEY, requests.get)
+    #print(json.dumps(response))
+    #sys.exit()
     run()
 

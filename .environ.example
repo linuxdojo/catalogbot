@@ -1,0 +1,13 @@
+# CatalogIt Config
+CIT_ACCOUNT_ID=YOUR_ACCOUNT_ID
+
+# Discourse Config
+# Note: API user requires perms on any parameter: topics.write+update+read, categories.list+show, uploads.create
+DISCOURSE_API_URL="https://YOUR_DISCOURSE_SITE_DOMAIN_NAME"
+DISCOURSE_API_USERNAME="YOUR_DISCOURSE_API_USER"
+DISCOURSE_API_KEY="YOUR_DISCOURSE_API_KEY"
+
+### Integration Config
+INT_FQDN="YOUR_INTEGRATION_URL"
+INT_BIND_HOST="0.0.0.0"
+INT_BIND_PORT=8080
