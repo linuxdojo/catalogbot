@@ -43,4 +43,4 @@ In CatalogIt, create Weblinks for your Entries with name `Discuss this item on o
 
 Clicking the new Weblink in CatalogIt will simply forward the user to the Discourse topic discussing the item.
 
-Under the hood, the the integration will create a new topic for the entry in Discourse if one does not currently exist, and redirect the user there. The topic will contain the title of the entry, an image if present in the entry, and a link back to the CatalogIt entry itself.
+Under the hood, the integration will create a new topic for the entry in Discourse if one does not currently exist, and redirect the user there. The topic will contain the title of the entry, an image if present in the entry, and a link back to the CatalogIt entry itself.

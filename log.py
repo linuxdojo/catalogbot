@@ -7,9 +7,9 @@ def get_logger():
     logger = logging.getLogger()
     logger.handlers = []
     logger.setLevel(logging.INFO)
-    stderr_handler = logging.StreamHandler(sys.stdout)
-    stderr_fmt = logging.Formatter(fmt='%(asctime)s - %(levelname)s: %(message)s')
-    stderr_handler.setFormatter(stderr_fmt)
-    logger.addHandler(stderr_handler)
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_fmt = logging.Formatter(fmt='%(asctime)s - %(levelname)s: %(message)s')
+    stdout_handler.setFormatter(stdout_fmt)
+    logger.addHandler(stdout_handler)
     return logger
 
