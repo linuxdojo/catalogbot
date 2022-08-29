@@ -16,7 +16,7 @@ class CatalogItAPI():
         self.search_string_template = f"{int_base_url}/{{custom_id}}"
         self.search_url_template = f"https://api.catalogit.app/api/public/accounts/{account_id}/search?query={{search_string}}"
 
-    def get_entry(self, custom_id):
+    def get_entry_by_custom_id(self, custom_id):
         search_string = urllib.parse.quote(
             self.search_string_template.format(custom_id=custom_id),
             safe=""
@@ -24,6 +24,6 @@ class CatalogItAPI():
         url = self.search_url_template.format(search_string=search_string)
         response = requests.get(url).json()
         if response["total"] != 1:
+            logger.warning(f"expected 1 entry but found {response['total']} for custom_id: {custom_id}")
             return None
-        else:
-            return response["entries"][0]
+        return response["entries"][0]

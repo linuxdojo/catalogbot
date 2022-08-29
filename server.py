@@ -77,9 +77,13 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         # extract custom_id
         custom_id = self.path[1:] if len(self.path) > 1 else None
-        if not UUID_PATTERN.match(custom_id):
-            logger.info(f"Got malformed custom_id: {custom_id}")
-            return self.send_error_response(message="malformed id")
+        try:
+            if not UUID_PATTERN.match(custom_id):
+                logger.info(f"Got malformed custom_id from {self.client_address}: {custom_id}")
+                return self.send_error_response(message="malformed id")
+        except Exception as e:
+            logger.info(f"Got exception while handling request from {self.client_address}: {e}")
+            return self.send_error_response(message="bad request")
         # get topic if exists
         topic = self.d_api.get_topic(custom_id)
         if topic:
@@ -87,7 +91,10 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
         else:
             # generate new topic attributes 
             logger.info(f"topic not found for custom_id '{custom_id}', creating new topic...")
-            cit_entry = self.cit_api.get_entry(custom_id)
+            cit_entry = self.cit_api.get_entry_by_custom_id(custom_id)
+            if not cit_entry:
+                logger.error(f"failed during lookup of catalogit entry for custom_id '{custom_id}'")
+                return self.send_error_response(message="unexpected error, please try again later", status=500)
             category_id = self.d_api.get_category_by_name(DISCOURSE_CATEGORY)["id"]
             image_url = cit_entry.get("media", [{}])[0].get("derivatives", {}).get("public", {}).get("path", "")
             title = f"{cit_entry['properties']['hasName']['value_text']}"
