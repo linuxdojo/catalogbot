@@ -97,7 +97,7 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
                 return self.send_error_response(message="unexpected cit-entry error, please try again later", status=500)
             category_id = self.d_api.get_category_by_name(DISCOURSE_CATEGORY)["id"]
             image_url = cit_entry.get("media", [{}])[0].get("derivatives", {}).get("public", {}).get("path", "")
-            title = f"{cit_entry['properties']['hasName']['value_text']}"
+            title = f"Discussion about collection item: {cit_entry['properties']['hasName']['value_text']}"
             embed_url = f"https://hub.catalogit.app/{CIT_ACCOUNT_ID}/folder/entry/{cit_entry['id']}"
             external_id = custom_id
             raw = TOPIC_TEMPLATE.format(
