@@ -93,8 +93,8 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             logger.info(f"topic not found for custom_id '{custom_id}', creating new topic...")
             cit_entry = self.cit_api.get_entry_by_custom_id(custom_id)
             if not cit_entry:
-                logger.error(f"failed during lookup of catalogit entry for custom_id '{custom_id}'")
-                return self.send_error_response(message="unexpected error, please try again later", status=500)
+                logger.error(f"failed during lookup of catalogit entry for custom_id '{custom_id}'. Request source: {self.client_address})")
+                return self.send_error_response(message="unexpected cit-entry error, please try again later", status=500)
             category_id = self.d_api.get_category_by_name(DISCOURSE_CATEGORY)["id"]
             image_url = cit_entry.get("media", [{}])[0].get("derivatives", {}).get("public", {}).get("path", "")
             title = f"{cit_entry['properties']['hasName']['value_text']}"
@@ -108,7 +108,11 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             # create new topic
             logger.info(f"title: {title}, category_id: '{category_id}', image_url: '{image_url}', embed_url: {embed_url}, external_id: {external_id}, raw: {raw}")
             result = self.d_api.create_topic(title, raw, category_id, embed_url, external_id)
-            topic_id = result["topic_id"]
+            try:
+                topic_id = result["topic_id"]
+            except KeyError:
+                logger.error(f"Failed to fetch topic_id after creating topic. Topic create response was: {result}")
+                return self.send_error_response(message="unexpected topic-fetch error, please try again later", status=500)
         # redirect to topic
         topic_url = f"{DISCOURSE_API_URL}/t/{topic_id}"
         self.send_response(301)
