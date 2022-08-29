@@ -4,19 +4,29 @@ CatalogBot is a bidirectional link integration between the [CatalogIt](https://w
 
 CatalogBot allows CatalogIt users to create "Discuss this item on our forum" weblinks that, when clicked, will redirect the user to a discussion topic for the item in your Discourse forum, creating the topic if it does not already exist.
 
+Note: This integration uses the CatalogIt API which is subject to your CatalogIt subscription. CatalogIt API access pricing is available at https://www.catalogit.app/pricing
+
 ## Attributions/License
 
 This integration was created for the [Autralian Computer Museum Society](https://acms.org.au) and is released under the GPLv3.
 
 ## Installation
 
-The integration can be run in a Pyton 3.10 virtualenv, or via Docker. Refer to the `.environ.example` file if you want to run this integration locally.
+The integration can be run locally or via Docker.
 
-The Docker image is available at https://hub.docker.com/r/linuxdojo/catalogbot
+### Running Locally
 
-## Usage via Docker
+It is recommended to run this integration from within a Python 3.10 virtualenv for development purposes. A `requirements.txt` is provided.
 
-Create an Discourse API user with full global permissions and specify the below env vars to start the integration:
+Refer to the `.environ.example` file to configure the integration.
+
+Start the server by running the `server.py` module.
+
+### Running via Docker
+
+For production usage, a CatalogBot Docker image is available at https://hub.docker.com/r/linuxdojo/catalogbot
+
+Create a Discourse API user with full global permissions and specify the below env vars to start the CatalogBot integration:
 
 ```
 docker run -it \
@@ -37,7 +47,7 @@ Where:
 * `DISCOURSE_CATEGORY` is the Category under which new Discourse forum topics are auto-created for CatalogIt Entries (this Category will be auto-created if it doesn't exist)
 * `INT_BASE_URL` is the HTTP URL that resolves to the host and port on which this integration is running, eg `http://my.server` or `http://my.server:8080`. Note that if you use a port other that 80, then you must specify the same port in the left most integer value of the `-p`, option, eg `-p 8080:80`
 
-In CatalogIt, create Weblinks for your Entries with name `Discuss this item on our forum`, and value `INT_BASE_URL/UUID` where `UUID` is a randomly generated version 4 UUID (you can generaete these [here](https://www.uuidgenerator.net/), or from within in a spreadsheet app, etc).
+In CatalogIt, create Weblinks for your Entries with name `Discuss this item on our forum`, and value `INT_BASE_URL/UUID` where `UUID` is a randomly generated version 4 UUID (you can generate these [here](https://www.uuidgenerator.net/), or from within in a spreadsheet app, etc).
 
 ### User Experience
 
