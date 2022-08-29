@@ -44,7 +44,7 @@ TOPIC_TEMPLATE="""
 <h2>Discussion topic: {title}</h2>
 <a target="_blank" href="{cit_entry_url}">
 	<img src="{image_url}" alt="{title}">
-</a>
+</a><br />
 Click the image to view this entry in our collection.
 <h6>Created by <a target="_blank" href="https://github.com/linuxdojo/catalogbot">CatalogBot</a></h6>
 """
@@ -106,7 +106,7 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
                 image_url=image_url
             )
             # create new topic
-            logger.info(f"title: {title}, category_id: '{category_id}', image_url: '{image_url}', embed_url: {embed_url}, external_id: {external_id}, raw: {raw}")
+            logger.info(f"title: '{title}', category_id: '{category_id}', image_url: '{image_url}', embed_url: {embed_url}, external_id: {external_id}")
             result = self.d_api.create_topic(title, raw, category_id, embed_url, external_id)
             try:
                 topic_id = result["topic_id"]
