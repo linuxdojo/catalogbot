@@ -106,6 +106,9 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             title = f"Discussion about collection item: {cit_name}"
             category_id = self.d_api.get_category_by_name(DISCOURSE_CATEGORY)["id"]
             image_url = cit_entry.get("media", [{}])[0].get("derivatives", {}).get("public", {}).get("path", "")
+            if not image_url:
+                logger.error(f"[{tracking_id}] Refusing to create topic for item missing image with entry_id: {cit_entry['id']}")
+                return self.send_error_response(message="Sorry, this item has no images yet and thus can't be linked to the forum", status=400)
             backlink_url = f"https://hub.catalogit.app/{CIT_ACCOUNT_ID}/folder/entry/{cit_entry['id']}"
             cit_description = cit_entry['properties'].get("hasDescription", {}).get("value_text")
             if cit_description:
