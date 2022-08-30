@@ -42,7 +42,7 @@ UUID_PATTERN = re.compile('^[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-
 DISCOURSE_API_URL = DISCOURSE_API_URL if not DISCOURSE_API_URL.endswith("/") else DISCOURSE_API_URL[:-1]
 INT_BASE_URL = INT_BASE_URL if not INT_BASE_URL.endswith("/") else INT_BASE_URL[:-1]
 TOPIC_TEMPLATE="""
-<h2>Discussion topic: {title}</h2>
+<h2>{title}</h2>
 <a target="_blank" href="{cit_entry_url}">
 	<img src="{image_url}" alt="{title}">
 </a><br />
