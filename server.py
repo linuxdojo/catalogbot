@@ -106,7 +106,7 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             title = f"Discussion about collection item: {cit_name}"
             category_id = self.d_api.get_category_by_name(DISCOURSE_CATEGORY)["id"]
             image_url = cit_entry.get("media", [{}])[0].get("derivatives", {}).get("public", {}).get("path", "")
-            embed_url = f"https://hub.catalogit.app/{CIT_ACCOUNT_ID}/folder/entry/{cit_entry['id']}"
+            backlink_url = f"https://hub.catalogit.app/{CIT_ACCOUNT_ID}/folder/entry/{cit_entry['id']}"
             cit_description = cit_entry['properties'].get("hasDescription", {}).get("value_text")
             if cit_description:
                 description = "<pre>Description:<br /><br />{d}<br /></pre>".format(d=cit_description.replace("\n", "<br />"))
@@ -115,13 +115,13 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             external_id = custom_id
             raw = TOPIC_TEMPLATE.format(
                 title=title,
-                cit_entry_url=embed_url,
+                cit_entry_url=backlink_url,
                 image_url=image_url,
                 description=description
             )
             # create new topic
-            logger.info(f"[{tracking_id}] New topic fields are: title: '{title}', category_id: '{category_id}', image_url: '{image_url}', embed_url: {embed_url}, external_id: {external_id}")
-            result = self.d_api.create_topic(title, raw, category_id, embed_url, external_id)
+            logger.info(f"[{tracking_id}] New topic fields are: title: '{title}', category_id: '{category_id}', image_url: '{image_url}', backlink_url: {backlink_url}, external_id: {external_id}")
+            result = self.d_api.create_topic(title, raw, category_id, external_id)
             try:
                 topic_id = result["topic_id"]
             except KeyError:

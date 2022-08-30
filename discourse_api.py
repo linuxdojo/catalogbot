@@ -68,12 +68,11 @@ class DiscourseAPI():
             return None
         return response
 
-    def create_topic(self, title, raw, category_id, embed_url, external_id):
+    def create_topic(self, title, raw, category_id, external_id):
         body = {
             "title": title,
             "raw": raw,
             "category": category_id,
-            "embed_url": embed_url,
             "external_id": external_id
         }
         response = self.api_request("/posts", requests.post, body=body)
