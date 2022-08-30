@@ -9,6 +9,7 @@ DISCOURSE_API_URL="https://YOUR_DISCOURSE_SITE_DOMAIN_NAME"
 DISCOURSE_API_USERNAME="YOUR_DISCOURSE_API_USER"
 DISCOURSE_API_KEY="YOUR_DISCOURSE_API_KEY"
 DISCOURSE_CATEGORY="Our CatalogIt Collection"
+DISCOURSE_TOPIC_FOOTER="<span>Do you have any additional information or resources about this item? Please join the discussion about this item here.</span>"
 
 ### Integration Config
 INT_BASE_URL="YOUR_INTEGRATION_URL"

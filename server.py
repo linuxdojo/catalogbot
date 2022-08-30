@@ -35,6 +35,7 @@ DISCOURSE_API_KEY = os.environ["DISCOURSE_API_KEY"]
 DISCOURSE_API_URL = os.environ["DISCOURSE_API_URL"]
 DISCOURSE_API_USERNAME = os.environ["DISCOURSE_API_USERNAME"]
 DISCOURSE_CATEGORY = os.environ["DISCOURSE_CATEGORY"]
+DISCOURSE_TOPIC_FOOTER = os.environ.get("DISCOURSE_TOPIC_FOOTER")
 INT_BASE_URL = os.environ["INT_BASE_URL"]
 SEARCH_STRING = f"{INT_BASE_URL}/{{custom_id}}"
 UUID_PATTERN = re.compile('^[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}$')
@@ -48,6 +49,7 @@ TOPIC_TEMPLATE="""
 </a><br />
 <a target="_blank" href="{cit_entry_url}">Click here or on the image to view this entry in our collection.</a>
 {description}
+{footer}
 <h6>Created by <a target="_blank" href="https://github.com/linuxdojo/catalogbot">CatalogBot</a></h6>
 """
 
@@ -121,7 +123,8 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
                 title=title,
                 cit_entry_url=backlink_url,
                 image_url=image_url,
-                description=description
+                description=description,
+                footer=DISCOURSE_TOPIC_FOOTER
             )
             # create new topic
             logger.info(f"[{tracking_id}] New topic fields are: title: '{title}', category_id: '{category_id}', image_url: '{image_url}', backlink_url: {backlink_url}, external_id: {external_id}")
