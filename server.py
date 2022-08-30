@@ -47,6 +47,7 @@ TOPIC_TEMPLATE="""
 	<img src="{image_url}" alt="{title}">
 </a><br />
 <a target="_blank" href="{cit_entry_url}">Click here or on the image to view this entry in our collection.</a>
+{description}
 <h6>Created by <a target="_blank" href="https://github.com/linuxdojo/catalogbot">CatalogBot</a></h6>
 """
 
@@ -98,15 +99,25 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             if not cit_entry:
                 logger.error(f"[{tracking_id}] Failed during lookup of catalogit entry for custom_id: {custom_id}")
                 return self.send_error_response(message="unexpected cit-entry error, please try again later", status=500)
+            cit_name = cit_entry['properties'].get("hasName", {}).get("value_text")
+            if not cit_name:
+                logger.error(f"[{tracking_id}] Refusing to create topic for unnamed item with entry_id: {cit_entry['id']}")
+                return self.send_error_response(message="Sorry, this item is not yet named and thus can't be linked to the forum", status=400)
+            title = f"Discussion about collection item: {cit_name}"
             category_id = self.d_api.get_category_by_name(DISCOURSE_CATEGORY)["id"]
             image_url = cit_entry.get("media", [{}])[0].get("derivatives", {}).get("public", {}).get("path", "")
-            title = f"Discussion about collection item: {cit_entry['properties']['hasName']['value_text']}"
             embed_url = f"https://hub.catalogit.app/{CIT_ACCOUNT_ID}/folder/entry/{cit_entry['id']}"
+            cit_description = cit_entry['properties'].get("hasDescription", {}).get("value_text")
+            if cit_description:
+                description = "<pre>Description:<br /><br />{d}<br /></pre>".format(d=cit_description.replace("\n", "<br />"))
+            else:
+                description = ""
             external_id = custom_id
             raw = TOPIC_TEMPLATE.format(
                 title=title,
                 cit_entry_url=embed_url,
-                image_url=image_url
+                image_url=image_url,
+                description=description
             )
             # create new topic
             logger.info(f"[{tracking_id}] New topic fields are: title: '{title}', category_id: '{category_id}', image_url: '{image_url}', embed_url: {embed_url}, external_id: {external_id}")
