@@ -104,7 +104,7 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             if not cit_name:
                 logger.error(f"[{tracking_id}] Refusing to create topic for unnamed item with entry_id: {cit_entry['id']}")
                 return self.send_error_response(message="Sorry, this item is not yet named and thus can't be linked to the forum", status=400)
-            title = f"Discussion about collection item: {cit_name}"
+            title = f"CatChat: {cit_name}"
             category_id = self.d_api.get_category_by_name(DISCOURSE_CATEGORY)["id"]
             image_url = cit_entry.get("media", [{}])[0].get("derivatives", {}).get("public", {}).get("path", "")
             if not image_url:
