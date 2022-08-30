@@ -91,6 +91,7 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
         # get topic if exists
         topic = self.d_api.get_topic(custom_id)
         if topic:
+            logger.info(f"[{tracking_id}] Topic found for custom_id '{custom_id}', redirecting user now...")
             topic_id = topic["id"]
         else:
             # generate new topic attributes 
