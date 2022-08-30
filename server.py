@@ -4,9 +4,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 import json
 import os
+import random
 import re
 import ssl
-import sys
+import string
 
 from dotenv import load_dotenv
 import requests
@@ -45,7 +46,7 @@ TOPIC_TEMPLATE="""
 <a target="_blank" href="{cit_entry_url}">
 	<img src="{image_url}" alt="{title}">
 </a><br />
-Click the image to view this entry in our collection.
+<a target="_blank" href="{cit_entry_url}">Click here or on the image to view this entry in our collection.</a>
 <h6>Created by <a target="_blank" href="https://github.com/linuxdojo/catalogbot">CatalogBot</a></h6>
 """
 
@@ -75,14 +76,16 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes(message, "utf8"))
 
     def do_GET(self):
+        tracking_id = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
+        logger.info(f"[{tracking_id}] New GET request from '{self.client_address}' with request headers '{self.headers}'")
         # extract custom_id
         custom_id = self.path[1:] if len(self.path) > 1 else None
         try:
             if not UUID_PATTERN.match(custom_id):
-                logger.info(f"Got malformed custom_id from {self.client_address}: {custom_id}")
+                logger.info(f"[{tracking_id}] Got malformed custom_id: {custom_id}'")
                 return self.send_error_response(message="malformed id")
         except Exception as e:
-            logger.info(f"Got exception while handling request from {self.client_address}: {e}")
+            logger.info(f"[{tracking_id}] Got exception while handling request: {e}'")
             return self.send_error_response(message="bad request")
         # get topic if exists
         topic = self.d_api.get_topic(custom_id)
@@ -90,10 +93,10 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             topic_id = topic["id"]
         else:
             # generate new topic attributes 
-            logger.info(f"topic not found for custom_id '{custom_id}', creating new topic...")
+            logger.info(f"[{tracking_id}] Topic not found for custom_id '{custom_id}', creating new topic...")
             cit_entry = self.cit_api.get_entry_by_custom_id(custom_id)
             if not cit_entry:
-                logger.error(f"failed during lookup of catalogit entry for custom_id '{custom_id}'. Request source: {self.client_address})")
+                logger.error(f"[{tracking_id}] Failed during lookup of catalogit entry for custom_id: {custom_id}")
                 return self.send_error_response(message="unexpected cit-entry error, please try again later", status=500)
             category_id = self.d_api.get_category_by_name(DISCOURSE_CATEGORY)["id"]
             image_url = cit_entry.get("media", [{}])[0].get("derivatives", {}).get("public", {}).get("path", "")
@@ -106,13 +109,19 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
                 image_url=image_url
             )
             # create new topic
-            logger.info(f"title: '{title}', category_id: '{category_id}', image_url: '{image_url}', embed_url: {embed_url}, external_id: {external_id}")
+            logger.info(f"[{tracking_id}] New topic fields are: title: '{title}', category_id: '{category_id}', image_url: '{image_url}', embed_url: {embed_url}, external_id: {external_id}")
             result = self.d_api.create_topic(title, raw, category_id, embed_url, external_id)
             try:
                 topic_id = result["topic_id"]
             except KeyError:
-                logger.error(f"Failed to fetch topic_id after creating topic. Topic create response was: {result}")
-                return self.send_error_response(message="unexpected topic-fetch error, please try again later", status=500)
+                logger.error(f"[{tracking_id}] Failed to fetch topic_id after creating topic. Topic create response was: {result}")
+                if 'External has already been taken' in result.get("errors", []):
+                    msg = f"duplicate UUID detected, please update your CatalogIt weblink with a unique UUID"
+                    status = 400
+                else:
+                    msg = "unexpected topic-fetch error, please try again later"
+                    status = 500
+                return self.send_error_response(message=msg, status=status)
         # redirect to topic
         topic_url = f"{DISCOURSE_API_URL}/t/{topic_id}"
         self.send_response(301)
@@ -130,7 +139,7 @@ def run():
             certfile='localhost.pem',
             ssl_version=ssl.PROTOCOL_TLSv1_2
         )
-    logger.info('Started CatalogIt-Discourse Integration Server, waiting for connections...')
+    logger.info('Started CatalogBot Server, waiting for connections...')
     httpd.serve_forever()
  
 
