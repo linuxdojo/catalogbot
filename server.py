@@ -115,7 +115,7 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             backlink_url = f"https://hub.catalogit.app/{CIT_ACCOUNT_ID}/folder/entry/{cit_entry['id']}"
             cit_description = cit_entry['properties'].get("hasDescription", {}).get("value_text")
             if cit_description:
-                description = "<pre>Description:<br /><br />{d}<br /></pre>".format(d=cit_description.replace("\n", "<br />"))
+                description = "<p>Description:<br /><br />{d}<br /></p>".format(d=cit_description.replace("\n", "<br />"))
             else:
                 description = ""
             external_id = custom_id
