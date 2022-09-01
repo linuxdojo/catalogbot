@@ -52,6 +52,7 @@ TOPIC_TEMPLATE="""
 {footer}
 <h6>Created by <a target="_blank" href="https://github.com/linuxdojo/catalogbot">CatalogBot</a></h6>
 """
+CRAWLER_USER_AGENTS = ["googlebot", "bingbot", "yahoo", "AhrefsBot", "Baiduspider", "Ezooms", "MJ12bot", "YandexBot", "bot", "agent", "spider", "crawler", "extractor"]
 
 # ThreadingMixin to make the HTTPServer multithreaded
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
@@ -81,6 +82,13 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         tracking_id = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
         logger.info(f"[{tracking_id}] New GET request from '{self.client_address}' with request headers '{self.headers}'")
+        # block crawlers
+        for k, v in self.headers.items():
+            if k.lower() == "user-agent":
+                for a in CRAWLER_USER_AGENTS:
+                    if a.lower() in v.lower():
+                        logger.info(f"[{tracking_id}] blocking crawler, detected via request header: {k}: {v}")
+                        return self.send_error_response(message="crawler blocked", status=403)
         # extract custom_id
         custom_id = self.path[1:] if len(self.path) > 1 else None
         try:
