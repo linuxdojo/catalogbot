@@ -68,6 +68,39 @@ class DiscourseAPI():
             return None
         return response
 
+    def islisted_topic(self, custom_id):
+        "returns True if visible, False if not listed, None if it doesn't exist"
+        topic = self.get_topic(custom_id)
+        if topic == None:
+            return None
+        return topic["visible"]
+
+    def unlist_topic(self, custom_id):
+        if not self.islisted_topic(custom_id):
+            return None
+        topic = self.get_topic(custom_id)
+        topic_id = topic["id"]
+        body = {
+            "id": topic_id,
+            "status": "visible",
+            "enabled": False
+        }
+        response = self.api_request(f"/t/{topic_id}", requests.put, body=body)
+        return response
+
+    def list_topic(self, custom_id):
+        if self.islisted_topic(custom_id) != False:
+            return None
+        topic = self.get_topic(custom_id)
+        topic_id = topic["id"]
+        body = {
+            "id": topic_id,
+            "status": "visible",
+            "enabled": True
+        }
+        response = self.api_request(f"/t/{topic_id}", requests.put, body=body)
+        return response
+
     def create_topic(self, title, raw, category_id, external_id):
         body = {
             "title": title,

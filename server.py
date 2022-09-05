@@ -103,6 +103,9 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
         if topic:
             logger.info(f"[{tracking_id}] Topic found for custom_id '{custom_id}', redirecting user now...")
             topic_id = topic["id"]
+            if self.d_api.islisted_topic(custom_id) == False:
+                logger.info(f"[{tracking_id}] Topic was unlisted, re-listing.")
+                self.d_api.list_topic(custom_id)
         else:
             # generate new topic attributes 
             logger.info(f"[{tracking_id}] Topic not found for custom_id '{custom_id}', creating new topic...")
