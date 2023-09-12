@@ -10,6 +10,8 @@ Note: This integration uses the CatalogIt API which is subject to your CatalogIt
 
 This integration was created for the [Autralian Computer Museum Society](https://acms.org.au) and is released under the GPLv3.
 
+Thanks to Phillip Quinn `<Phillip.Quinn@acms.org.au>` and Sebastian Boell `<sebastian.boell@acms.org.au>` from the ACMS for support with designing and testing this integration.
+
 ## Installation
 
 The integration can be run locally or via Docker.
