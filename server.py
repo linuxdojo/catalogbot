@@ -42,16 +42,16 @@ UUID_PATTERN = re.compile('^[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-
 # remove trailing slashes
 DISCOURSE_API_URL = DISCOURSE_API_URL if not DISCOURSE_API_URL.endswith("/") else DISCOURSE_API_URL[:-1]
 INT_BASE_URL = INT_BASE_URL if not INT_BASE_URL.endswith("/") else INT_BASE_URL[:-1]
-TOPIC_TEMPLATE="""
-<h2>{title}</h2>
-<a target="_blank" href="{cit_entry_url}">
-	<img src="{image_url}" alt="{title}">
-</a><br />
-<a target="_blank" href="{cit_entry_url}">Click here or on the image to view this entry in our collection.</a>
-{description}
-{footer}
-<h6>Created by <a target="_blank" href="https://github.com/linuxdojo/catalogbot">CatalogBot</a></h6>
-"""
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def load_template(name):
+    """templates use $placeholders so that CSS braces need no escaping"""
+    with open(os.path.join(BASE_DIR, "templates", name), encoding="utf8") as fh:
+        return string.Template(fh.read())
+
+
+TOPIC_TEMPLATE = load_template("topic.html")
 CRAWLER_USER_AGENTS = ["googlebot", "bingbot", "yahoo", "AhrefsBot", "Baiduspider", "Ezooms", "MJ12bot", "YandexBot", "bot", "agent", "spider", "crawler", "extractor"]
 # nothing here is meant to be crawled: every path is a redirect into CatalogIt
 # or the forum. GoogleOther honours this, and it created 24 of the 43 unwanted
@@ -147,7 +147,7 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             else:
                 description = ""
             external_id = custom_id
-            raw = TOPIC_TEMPLATE.format(
+            raw = TOPIC_TEMPLATE.safe_substitute(
                 title=title,
                 cit_entry_url=backlink_url,
                 image_url=image_url,
