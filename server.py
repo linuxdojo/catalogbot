@@ -68,6 +68,9 @@ INTERSTITIAL_TEMPLATE = load_template("interstitial.html")
 # served from this host so the integration doesn't depend on acms.org.au
 STATIC_FILES = {
     "/static/acms-logo.jpg": ("image/jpeg", load_static("acms-logo.jpg")),
+    # browsers ask for this at the root unprompted, and without it every page
+    # view logged a spurious "malformed id" 400
+    "/favicon.ico": ("image/x-icon", load_static("favicon.ico")),
 }
 LOGO_URL = "/static/acms-logo.jpg"
 # a topic is only created by POSTing the form on the interstitial page, and the
