@@ -53,6 +53,10 @@ TOPIC_TEMPLATE="""
 <h6>Created by <a target="_blank" href="https://github.com/linuxdojo/catalogbot">CatalogBot</a></h6>
 """
 CRAWLER_USER_AGENTS = ["googlebot", "bingbot", "yahoo", "AhrefsBot", "Baiduspider", "Ezooms", "MJ12bot", "YandexBot", "bot", "agent", "spider", "crawler", "extractor"]
+# nothing here is meant to be crawled: every path is a redirect into CatalogIt
+# or the forum. GoogleOther honours this, and it created 24 of the 43 unwanted
+# topics on 10-12 Aug 2026 because its user-agent matches nothing above.
+ROBOTS_TXT = "User-agent: *\nDisallow: /\n"
 
 # ThreadingMixin to make the HTTPServer multithreaded
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
@@ -79,9 +83,22 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
         message = json.dumps(data)
         self.wfile.write(bytes(message, "utf8"))
 
+    def send_robots_txt(self):
+        body = bytes(ROBOTS_TXT, "utf8")
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
         tracking_id = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
         logger.info(f"[{tracking_id}] New GET request from '{self.client_address}' with request headers '{self.headers}'")
+        # serve robots.txt ahead of the crawler block below, otherwise the
+        # crawlers we want to turn away can never read the rules
+        if self.path.split("?")[0] == "/robots.txt":
+            logger.info(f"[{tracking_id}] serving robots.txt")
+            return self.send_robots_txt()
         # block crawlers
         for k, v in self.headers.items():
             if k.lower() == "user-agent":
