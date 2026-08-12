@@ -243,7 +243,10 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             if self.d_api.islisted_topic(custom_id) == False:
                 logger.info(f"[{tracking_id}] Topic was unlisted, re-listing.")
                 self.d_api.list_topic(custom_id)
-            return self.redirect_to_topic(topic["id"], 301)
+            # 302 rather than 301: a permanent redirect is cached by the
+            # browser, which would stop later clicks reaching this integration
+            # at all (and so stop an unlisted topic ever being re-listed)
+            return self.redirect_to_topic(topic["id"], 302)
         # no topic yet: offer to start one instead of starting it here, so that
         # anything which merely follows the link creates nothing
         logger.info(f"[{tracking_id}] Topic not found for custom_id '{custom_id}', serving creation gate...")
