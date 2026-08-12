@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Discuss $title | ACMS</title>
+<style>
+  :root { --acms-green: #00813c; --ink: #333333; --muted: #666666; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1rem; background: #f2f4f2; color: var(--ink);
+    font-family: "Open Sans", "Segoe UI", Roboto, -apple-system, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  .card {
+    max-width: 32rem; margin: 0 auto; background: #fff; border-radius: 8px;
+    border-top: 4px solid var(--acms-green); padding: 1.75rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .09); text-align: center;
+  }
+  .logo { max-width: 200px; height: auto; margin-bottom: 1.5rem; }
+  .item {
+    max-width: 100%; height: auto; max-height: 17rem;
+    border-radius: 6px; border: 1px solid #e3e6e3;
+  }
+  h1 { font-size: 1.25rem; margin: 1.25rem 0 .5rem; font-weight: 600; }
+  p { color: var(--muted); margin: .5rem 0 0; font-size: .95rem; }
+  button {
+    font: inherit; font-weight: 600; margin: 1.5rem 0 .25rem;
+    padding: .8rem 1.6rem; border: 0; border-radius: 5px;
+    background: var(--acms-green); color: #fff; cursor: pointer;
+  }
+  button:hover { background: #006b32; }
+  button:focus-visible { outline: 3px solid #7fea27; outline-offset: 2px; }
+  a { color: var(--acms-green); }
+  .sub { font-size: .85rem; margin-top: 1.25rem; }
+  .sub a { color: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <a href="https://acms.org.au/">
+      <img class="logo" src="$logo_url" alt="Australian Computer Museum Society">
+    </a>
+    <a href="$cit_entry_url">
+      <img class="item" src="$image_url" alt="$title">
+    </a>
+    <h1>$title</h1>
+    <p>No one has discussed this item yet. Start a topic on our forum and be the first.</p>
+    <form method="post" action="/$custom_id">
+      <input type="hidden" name="token" value="$token">
+      <button type="submit">Start the discussion</button>
+    </form>
+    <p class="sub"><a href="$cit_entry_url">View this item in our collection</a></p>
+  </div>
+</body>
+</html>

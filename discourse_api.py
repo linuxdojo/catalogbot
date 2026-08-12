@@ -24,8 +24,14 @@ class DiscourseAPI():
             "headers": headers,
         }
         if method_func == requests.post:
-            #headers.pop("Accept")
+            # this Content-Type is not strictly accurate (requests sends
+            # form-urlencoded) but Discourse accepts it and topic creation has
+            # depended on it for years, so it is left as-is
             headers["Content-Type"] = "multipart/form-data"
+            kwargs["data"] = body
+        elif method_func == requests.put:
+            # PUT bodies were previously dropped, so every PUT reached
+            # Discourse with no parameters at all
             kwargs["data"] = body
         # do request
         url = f"{self.base_url}{path}"
@@ -81,11 +87,14 @@ class DiscourseAPI():
         topic = self.get_topic(custom_id)
         topic_id = topic["id"]
         body = {
-            "id": topic_id,
             "status": "visible",
-            "enabled": False
+            # Discourse compares this to the string "true", so a python bool
+            # serialises as "False"/"True" and is never equal to it
+            "enabled": "false"
         }
-        response = self.api_request(f"/t/{topic_id}", requests.put, body=body)
+        # /t/{id} is the title+category endpoint; listing state lives at
+        # /t/{id}/status (topics#status)
+        response = self.api_request(f"/t/{topic_id}/status", requests.put, body=body)
         return response
 
     def list_topic(self, custom_id):
@@ -94,11 +103,10 @@ class DiscourseAPI():
         topic = self.get_topic(custom_id)
         topic_id = topic["id"]
         body = {
-            "id": topic_id,
             "status": "visible",
-            "enabled": True
+            "enabled": "true"
         }
-        response = self.api_request(f"/t/{topic_id}", requests.put, body=body)
+        response = self.api_request(f"/t/{topic_id}/status", requests.put, body=body)
         return response
 
     def create_topic(self, title, raw, category_id, external_id):

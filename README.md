@@ -53,6 +53,18 @@ In CatalogIt, create Weblinks for your Entries with name `Discuss this item on o
 
 ### User Experience
 
-Clicking the new Weblink in CatalogIt will simply forward the user to the Discourse topic discussing the item.
+Clicking the new Weblink in CatalogIt forwards the user to the Discourse topic discussing the item.
 
-Under the hood, the integration will create a new topic for the entry in Discourse if one does not currently exist, and redirect the user there. The topic will contain the title of the entry, an image if present in the entry, and a link back to the CatalogIt entry itself.
+If no topic exists yet, the user is shown a short confirmation page for the item with a "Start the discussion" button. Pressing it creates the topic and forwards them to it. The topic will contain the title of the entry, an image if present in the entry, and a link back to the CatalogIt entry itself.
+
+The confirmation step exists because a topic must only be created when a person asks for one. Following the weblink creates nothing, so search crawlers and other automated visitors cannot fill the forum with topics nobody requested.
+
+### Keeping automated visitors out
+
+Three independent measures, since none is sufficient alone:
+
+* `robots.txt` disallows everything, which turns away well-behaved crawlers.
+* Requests whose User-Agent matches `CRAWLER_USER_AGENTS` in `server.py` are refused. Note that not every crawler is honest or obvious: `GoogleOther` contains no "bot" substring.
+* Topics are only created by POSTing the confirmation form, which carries a signed, expiring token. Anything that merely fetches the weblink creates nothing.
+
+As a backstop, `INT_MAX_NEW_TOPICS_PER_HOUR` (default 20) caps how many topics can be created in a rolling hour. Reaching the cap is logged as an ERROR and further attempts are refused until it drains.
