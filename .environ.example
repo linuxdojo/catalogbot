@@ -15,3 +15,6 @@ DISCOURSE_TOPIC_FOOTER="<span>Do you have any additional information or resource
 INT_BASE_URL="YOUR_INTEGRATION_URL"
 INT_BIND_HOST="0.0.0.0"
 INT_BIND_PORT=8080
+# Safety net: the most topics that may be created in any rolling hour. Reaching
+# it is logged as an ERROR. Optional, defaults to 20.
+INT_MAX_NEW_TOPICS_PER_HOUR=20

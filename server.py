@@ -2,6 +2,7 @@
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
+import collections
 import hashlib
 import hmac
 import html
@@ -11,6 +12,7 @@ import random
 import re
 import ssl
 import string
+import threading
 import time
 import urllib.parse
 
@@ -73,6 +75,10 @@ LOGO_URL = "/static/acms-logo.jpg"
 # blindly POSTs to it) creates nothing
 GATE_SECRET = os.urandom(32)
 GATE_TOKEN_TTL = 1800
+# backstop: whatever gets past the gate, it cannot create more topics than this
+# in a rolling hour. 43 unwanted topics accumulated over three days in Aug 2026
+# before anyone noticed; a cap makes the next surprise bounded and loud.
+MAX_NEW_TOPICS_PER_HOUR = int(os.environ.get("INT_MAX_NEW_TOPICS_PER_HOUR", 20))
 # "googleother" is listed separately because, unlike googlebot, its user-agent
 # contains no "bot" substring and so matched nothing here
 CRAWLER_USER_AGENTS = ["googlebot", "googleother", "bingbot", "yahoo", "AhrefsBot", "Baiduspider", "Ezooms", "MJ12bot", "YandexBot", "bot", "agent", "spider", "crawler", "extractor"]
@@ -88,6 +94,10 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
 # HTTPRequestHandler class
 class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
+
+    # shared across the per-request handler instances
+    _cap_lock = threading.Lock()
+    _created_at = collections.deque()
 
     def __init__(self, *args, **kwargs):
         self.cit_api = catalogit_api.CatalogItAPI(CIT_ACCOUNT_ID, INT_BASE_URL)
@@ -138,6 +148,20 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
             return False
         expected = hmac.new(GATE_SECRET, f"{custom_id}:{expires}".encode("utf8"), hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, digest)
+
+    def creation_allowed(self, tracking_id):
+        """rolling one hour cap on new topics. Attempts are counted rather than
+        successes, so a burst of failing creations trips it too."""
+        cls = type(self)
+        now = time.time()
+        with cls._cap_lock:
+            while cls._created_at and cls._created_at[0] < now - 3600:
+                cls._created_at.popleft()
+            if len(cls._created_at) >= MAX_NEW_TOPICS_PER_HOUR:
+                logger.error(f"[{tracking_id}] TOPIC CREATION CAP REACHED: {len(cls._created_at)} in the last hour, limit is {MAX_NEW_TOPICS_PER_HOUR}. Refusing to create any more until it drains.")
+                return False
+            cls._created_at.append(now)
+            return True
 
     def is_crawler(self, tracking_id):
         for k, v in self.headers.items():
@@ -261,6 +285,8 @@ class HTTPServer_RequestHandler(BaseHTTPRequestHandler):
         if topic:
             logger.info(f"[{tracking_id}] Topic already exists for custom_id '{custom_id}', redirecting user now...")
             return self.redirect_to_topic(topic["id"], 303)
+        if not self.creation_allowed(tracking_id):
+            return self.send_error_response(message="too many new discussions have been started recently, please try again shortly", status=503)
         fields = self.get_entry_fields(custom_id, tracking_id)
         if not fields:
             return
